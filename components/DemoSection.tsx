@@ -3,8 +3,8 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { GoogleGenAI, Modality } from "@google/genai";
 import { analyzeImage } from '../services/geminiService';
 import { AnalysisResponse, HazardType, ThreatLevel } from '../types';
+import { PagePath } from '../App';
 
-// Fonctions utilitaires pour le décodage audio PCM
 function decodeBase64(base64: string) {
   const binaryString = atob(base64);
   const bytes = new Uint8Array(binaryString.length);
@@ -27,7 +27,11 @@ async function decodeAudioData(data: Uint8Array, ctx: AudioContext, sampleRate: 
   return buffer;
 }
 
-export const DemoSection: React.FC = () => {
+interface DemoSectionProps {
+  onNavigate?: (path: PagePath) => void;
+}
+
+export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
   const [mode, setMode] = useState<'camera' | 'upload'>('upload');
   const [isLive, setIsLive] = useState(false);
   const [image, setImage] = useState<string | null>(null);
@@ -190,7 +194,7 @@ export const DemoSection: React.FC = () => {
   }, [playAlert]);
 
   const toggleLive = () => {
-    if (mode === 'camera') return; // Bloqué par le message d'abonnement
+    if (mode === 'camera') return;
     initAudio();
     if (isLive) {
       setIsLive(false);
@@ -250,7 +254,7 @@ export const DemoSection: React.FC = () => {
         left: `${xmin / 10}%`,
         width: `${(xmax - xmin) / 10}%`,
         height: `${(ymax - ymin) / 10}%`,
-        borderColor: risk.threatLevel === ThreatLevel.HIGH ? '#ef4444' : risk.threatLevel === ThreatLevel.MEDIUM ? '#FFB81C' : '#ffffff',
+        borderColor: risk.threatLevel === ThreatLevel.HIGH ? '#DC2626' : risk.threatLevel === ThreatLevel.MEDIUM ? '#2563EB' : '#ffffff',
       };
       return (
         <div 
@@ -258,7 +262,7 @@ export const DemoSection: React.FC = () => {
           className={`absolute border-2 rounded pointer-events-none transition-all duration-1000 ease-in-out ${risk.threatLevel === ThreatLevel.HIGH ? 'animate-pulse' : ''}`}
           style={style}
         >
-          <div className={`absolute top-0 left-0 -translate-y-full px-2 py-0.5 text-[8px] font-black text-white uppercase rounded-t flex items-center gap-1 ${risk.threatLevel === ThreatLevel.HIGH ? 'bg-red-500' : risk.threatLevel === ThreatLevel.MEDIUM ? 'bg-[#FFB81C]' : 'bg-blue-600'}`}>
+          <div className={`absolute top-0 left-0 -translate-y-full px-2 py-0.5 text-[8px] font-black text-white uppercase rounded-t flex items-center gap-1 ${risk.threatLevel === ThreatLevel.HIGH ? 'bg-[#DC2626]' : risk.threatLevel === ThreatLevel.MEDIUM ? 'bg-[#2563EB]' : 'bg-slate-600'}`}>
             <i className={`fas ${risk.type === 'person' ? 'fa-person' : risk.type === 'animal' ? 'fa-paw' : 'fa-triangle-exclamation'}`}></i>
             {risk.type}
           </div>
@@ -276,155 +280,110 @@ export const DemoSection: React.FC = () => {
   }, [videoFileUrl, stopCamera]);
 
   return (
-    <section id="demo" className="py-24 bg-[#0000FF] text-white relative overflow-hidden">
-      {/* Halos lumineux pour le dynamisme */}
-      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-white/10 blur-[120px] rounded-full -mr-48 -mt-48"></div>
-      <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-yellow-400/10 blur-[100px] rounded-full -ml-24 -mb-24"></div>
+    <section id="demo" className="pt-4 pb-10 bg-[#0F172A] text-white relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-600/5 blur-[120px] rounded-full -mr-48 -mt-48"></div>
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-white text-[10px] font-black mb-4 uppercase tracking-[0.2em]">
-            <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span></span>
-            Laboratoire de Vision
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-white text-[8px] font-black mb-1.5 uppercase tracking-[0.2em]">
+            <span className="relative flex h-1 w-1"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#DC2626] opacity-75"></span><span className="relative inline-flex rounded-full h-1 w-1 bg-[#DC2626]"></span></span>
+            Laboratoire de Vision IA
           </div>
-          <h2 className="text-3xl md:text-5xl font-black mb-4 leading-tight">Démonstrateur Interactif</h2>
-          <p className="text-blue-100/70 max-w-2xl mx-auto text-lg">Testez l'analyse en temps réel sur vos propres vidéos ou passez au mode Live Cam.</p>
+          <h2 className="text-2xl md:text-3xl font-extrabold mb-1 leading-tight">Démonstrateur Interactif</h2>
+          <p className="text-slate-400 max-w-2xl mx-auto text-sm">Analysez vos flux en temps réel avec la puissance de l'IA.</p>
         </div>
 
-        <div className="grid lg:grid-cols-4 gap-8">
-          <div className="lg:col-span-3 order-1 lg:order-2">
-            <div className="relative aspect-video bg-black rounded-[2.5rem] overflow-hidden shadow-2xl ring-4 ring-white/10 group">
+        <div className="grid lg:grid-cols-4 gap-6 items-start">
+          <div className="lg:col-span-3 order-1 lg:order-2 flex flex-col items-center">
+            {/* Zone d'affichage réduite de 20% (max-w-[80%] sur desktop) */}
+            <div className="w-full lg:w-[80%] mx-auto relative aspect-video bg-black rounded-[1.5rem] overflow-hidden shadow-2xl ring-1 ring-white/10 group">
               {mode === 'camera' ? (
-                <div className="absolute inset-0 z-50 bg-blue-900/90 backdrop-blur-xl flex flex-col items-center justify-center p-8 text-center animate-fade-in">
-                  <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-[#FFB81C] rounded-[2rem] flex items-center justify-center text-white text-4xl shadow-2xl mb-8 animate-pulse">
-                    <i className="fas fa-crown"></i>
+                <div className="absolute inset-0 z-50 bg-[#0F172A]/95 backdrop-blur-xl flex flex-col items-center justify-center p-8 text-center">
+                  <div className="w-12 h-12 bg-[#DC2626] rounded-xl flex items-center justify-center text-white text-xl shadow-2xl mb-4">
+                    <i className="fas fa-lock"></i>
                   </div>
-                  <h3 className="text-2xl md:text-3xl font-black mb-4 text-[#FFB81C]">Débloquez la Sécurité Active</h3>
-                  <p className="text-blue-100 max-w-md mb-8 leading-relaxed font-medium">
-                    La détection en temps réel par caméra est réservée à nos membres Premium. Anticipez les dangers sur la route avec une précision inégalée.
+                  <h3 className="text-lg font-black mb-2 text-white">Accès Premium Requis</h3>
+                  <p className="text-slate-400 max-w-sm mb-5 leading-relaxed font-medium text-[11px]">
+                    L'analyse en direct via caméra est une fonctionnalité réservée aux abonnés Advanced Pro.
                   </p>
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <button 
-                      onClick={() => {
-                        const pricingSection = document.getElementById('pricing');
-                        if (pricingSection) pricingSection.scrollIntoView({ behavior: 'smooth' });
-                      }}
-                      className="bg-[#FFB81C] text-blue-900 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-yellow-400 transition-all shadow-xl shadow-black/20"
-                    >
-                      Voir les Plans Premium
-                    </button>
-                    <button 
-                      onClick={() => handleModeChange('upload')}
-                      className="bg-white/10 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-white/20 transition-all border border-white/20"
-                    >
-                      Rester en mode Import
-                    </button>
-                  </div>
+                  <button 
+                    onClick={() => {
+                      if (onNavigate) onNavigate('pricing');
+                    }} 
+                    className="bg-[#DC2626] text-white px-5 py-2.5 rounded-full font-black text-[8px] uppercase tracking-widest hover:bg-[#B91C1C] transition-all"
+                  >
+                    Découvrir les offres
+                  </button>
                 </div>
               ) : (
                 <>
-                  <div className="absolute inset-0 pointer-events-none z-20 flex flex-col justify-between p-8">
-                    <div className="flex justify-between items-start">
-                        <div className="bg-black/40 backdrop-blur-md px-3 py-1 rounded-lg border border-white/10 flex items-center gap-3">
-                          <span className={`w-2 h-2 rounded-full ${isLive ? 'bg-[#FFB81C] animate-pulse' : 'bg-white/40'}`}></span>
-                          <span className="text-[10px] font-mono font-bold text-[#FFB81C]">AI_CORE: ACTIVE_v3</span>
-                        </div>
-                        <div className="text-[10px] font-mono text-white/50">PROCESSED // 1080p</div>
-                    </div>
-                  </div>
-
                   <div className="absolute inset-0 z-0 flex items-center justify-center">
-                    {mode === 'upload' && videoFileUrl && <video key={videoFileUrl} ref={uploadVideoRef} src={videoFileUrl} autoPlay loop muted playsInline className="w-full h-full object-cover opacity-90" />}
-                    {image && <img src={image} className="w-full h-full object-cover opacity-90" />}
-                    {!videoFileUrl && !image && <div className="text-white text-center"><i className="fas fa-eye-slash text-6xl mb-4 opacity-20"></i><p className="font-black opacity-30 uppercase tracking-[0.3em] text-[10px]">Importez une vidéo pour tester avec DzSafeDrive</p></div>}
+                    {mode === 'upload' && videoFileUrl && <video key={videoFileUrl} ref={uploadVideoRef} src={videoFileUrl} autoPlay loop muted playsInline className="w-full h-full object-cover opacity-80" />}
+                    {image && <img src={image} className="w-full h-full object-cover opacity-80" />}
+                    {!videoFileUrl && !image && <div className="text-white text-center opacity-20"><i className="fas fa-eye-slash text-4xl mb-2"></i><p className="font-black uppercase tracking-widest text-[8px]">Importez un média</p></div>}
                   </div>
-
-                  <div className="absolute inset-0 z-10 pointer-events-none">
-                    {drawOverlays()}
-                  </div>
-
-                  {isLive && <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden"><div className="w-full h-[1px] bg-white/60 shadow-[0_0_15px_rgba(255,255,255,0.8)] absolute animate-[scan_5s_linear_infinite]"></div></div>}
+                  <div className="absolute inset-0 z-10 pointer-events-none">{drawOverlays()}</div>
+                  {isLive && <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden"><div className="w-full h-[1px] bg-[#DC2626]/50 shadow-[0_0_15px_rgba(220,38,38,0.5)] absolute animate-[scan_5s_linear_infinite]"></div></div>}
                 </>
               )}
             </div>
-
-            {result?.alertNeeded && (
-              <div className="mt-4 bg-red-600/90 backdrop-blur-xl border border-red-500/50 p-4 rounded-2xl flex items-center justify-between animate-pulse shadow-lg shadow-red-900/40">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                    <i className="fas fa-exclamation-triangle text-white text-xl"></i>
-                  </div>
-                  <div>
-                    <div className="text-white font-black text-sm uppercase tracking-tighter leading-none">ALERTE CRITIQUE</div>
-                    <div className="text-[10px] font-bold text-white/80 uppercase tracking-widest mt-1">Freinage immédiat requis</div>
-                  </div>
-                </div>
-                <div className="hidden sm:block text-[9px] font-black text-white/40 uppercase tracking-[0.2em]">DzSafeDrive Active Protection</div>
-              </div>
-            )}
-
+            
             {result && mode === 'upload' && (
-              <div className="mt-4 p-6 bg-white/10 backdrop-blur-md border-l-4 border-[#FFB81C] rounded-3xl shadow-lg flex gap-5 items-center animate-fade-in border border-white/10">
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border-2 transition-all ${loading ? 'bg-yellow-400/20 text-yellow-400 border-yellow-400/30' : 'bg-white/20 text-white border-white/30'}`}>
-                  <i className={`fas ${loading ? 'fa-circle-notch fa-spin' : 'fa-brain'} text-xl`}></i>
+              <div className="w-full lg:w-[80%] mt-4 p-4 bg-white/5 backdrop-blur-md rounded-xl border border-white/10 flex gap-4 items-center animate-fade-in shadow-xl mx-auto">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center border transition-all flex-shrink-0 ${loading ? 'bg-[#DC2626]/20 text-[#DC2626] border-[#DC2626]/30' : 'bg-[#2563EB]/20 text-[#2563EB] border-[#2563EB]/20'}`}>
+                  <i className={`fas ${loading ? 'fa-circle-notch fa-spin' : 'fa-brain'} text-base`}></i>
                 </div>
                 <div>
-                  <p className="text-[10px] font-black text-[#FFB81C] mb-1 uppercase tracking-widest opacity-90">Diagnostic Vocal & Intelligence</p>
-                  <p className="text-white leading-relaxed italic text-sm font-medium">"{result.summary}"</p>
+                  <p className="text-[7px] font-black text-[#DC2626] mb-0.5 uppercase tracking-widest opacity-90">Assistant Vocal SafeDrive</p>
+                  <p className="text-white leading-relaxed italic text-[11px] font-medium">"{result.summary}"</p>
                 </div>
               </div>
             )}
           </div>
 
-          <div className="lg:col-span-1 space-y-6 order-2 lg:order-1">
-            <div className="bg-white/10 backdrop-blur-md p-6 rounded-[2rem] border border-white/20 shadow-xl">
-              <h3 className="text-sm font-black mb-6 flex items-center gap-2 text-white/80 uppercase tracking-widest"><i className="fas fa-sliders text-[#FFB81C]"></i> Paramètres</h3>
-              <div className="flex gap-2 p-1 bg-black/20 rounded-2xl mb-6 border border-white/10">
-                <button onClick={() => handleModeChange('upload')} className={`flex-1 py-2.5 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest ${mode === 'upload' ? 'bg-white text-blue-900 shadow-md' : 'text-white/60 hover:text-white'}`}>IMPORT</button>
-                <button onClick={() => handleModeChange('camera')} className={`flex-1 py-2.5 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest ${mode === 'camera' ? 'bg-white text-blue-900 shadow-md' : 'text-white/60 hover:text-white'}`}>LIVE CAM</button>
+          <div className="lg:col-span-1 space-y-4 order-2 lg:order-1">
+            <div className="bg-white/5 backdrop-blur-md p-4 rounded-xl border border-white/10 shadow-xl">
+              <h3 className="text-[8px] font-black mb-4 text-slate-500 uppercase tracking-widest">Contrôles</h3>
+              <div className="flex gap-2 p-1 bg-black/40 rounded-lg mb-4">
+                <button onClick={() => handleModeChange('upload')} className={`flex-1 py-1.5 rounded text-[8px] font-black transition-all uppercase tracking-widest ${mode === 'upload' ? 'bg-[#DC2626] text-white' : 'text-slate-400 hover:text-white'}`}>IMPORT</button>
+                <button onClick={() => handleModeChange('camera')} className={`flex-1 py-1.5 rounded text-[8px] font-black transition-all uppercase tracking-widest ${mode === 'camera' ? 'bg-[#DC2626] text-white' : 'text-slate-400 hover:text-white'}`}>LIVE</button>
               </div>
 
               {mode === 'upload' && (
                 <>
                   {(videoFileUrl || image) && (
-                    <button onClick={toggleLive} className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${isLive ? 'bg-red-600 border-transparent' : 'bg-[#FFB81C] text-blue-900 border-transparent hover:bg-yellow-400 shadow-lg shadow-black/20'}`}>
-                      <i className={`fas ${isLive ? 'fa-stop-circle' : 'fa-play-circle'}`}></i> {isLive ? 'Scanner Off' : 'Lancer Scan'}
+                    <button onClick={toggleLive} className={`w-full py-2.5 rounded-lg font-black text-[8px] uppercase tracking-widest transition-all mb-3 ${isLive ? 'bg-[#0F172A] border border-[#DC2626] text-[#DC2626]' : 'bg-[#DC2626] text-white hover:bg-[#B91C1C]'}`}>
+                      {isLive ? 'Arrêter le scan' : 'Lancer le scan'}
                     </button>
                   )}
-                  <div onClick={() => fileInputRef.current?.click()} className="mt-4 border-2 border-dashed border-white/20 rounded-2xl p-6 text-center cursor-pointer hover:border-[#FFB81C] hover:bg-white/5 transition-all group">
-                    <i className="fas fa-cloud-arrow-up text-3xl text-white/40 group-hover:text-[#FFB81C] mb-3"></i>
-                    <p className="text-[10px] font-black text-white/40 uppercase tracking-widest group-hover:text-white">{videoFileUrl || image ? 'Modifier' : 'Importer'}</p>
+                  <div onClick={() => fileInputRef.current?.click()} className="border border-dashed border-white/10 rounded-lg p-4 text-center cursor-pointer hover:border-[#DC2626] transition-all group">
+                    <i className="fas fa-upload text-lg text-slate-600 group-hover:text-[#DC2626] mb-1.5"></i>
+                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{videoFileUrl || image ? 'Remplacer' : 'Charger'}</p>
                     <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} accept="video/*,image/*" />
                   </div>
                 </>
               )}
             </div>
 
-            <div className="bg-white/10 backdrop-blur-md p-6 rounded-[2rem] border border-white/20 shadow-xl overflow-hidden">
-              <h3 className="text-[10px] font-black text-white/50 uppercase tracking-[0.2em] mb-4">Flux d'événements</h3>
-              <div className="space-y-3">
+            <div className="bg-white/5 backdrop-blur-md p-4 rounded-xl border border-white/10 shadow-xl max-h-[200px] overflow-hidden">
+              <h3 className="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3">Événements</h3>
+              <div className="space-y-1.5">
                 {history.length > 0 ? history.map((h, i) => (
-                  <div key={i} className="flex items-center justify-between text-[10px] p-3 bg-white/5 rounded-xl border border-white/10 animate-slide-in">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-2 h-2 rounded-full ${h.level === 'high' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]' : h.level === 'medium' ? 'bg-[#FFB81C]' : 'bg-blue-400'}`}></div>
-                      <span className="font-black text-white capitalize">{h.type}</span>
+                  <div key={i} className="flex items-center justify-between text-[8px] p-2 bg-white/5 rounded-lg border border-white/5">
+                    <div className="flex items-center gap-1.5">
+                      <div className={`w-1 h-1 rounded-full ${h.level === 'high' ? 'bg-[#DC2626]' : 'bg-[#2563EB]'}`}></div>
+                      <span className="font-bold text-white capitalize">{h.type}</span>
                     </div>
-                    <span className="text-white/40 font-mono tracking-tighter">{h.time}</span>
+                    <span className="text-slate-500 font-mono">{h.time}</span>
                   </div>
-                )) : (
-                  <p className="text-[10px] text-white/30 text-center italic py-4">En attente de détection...</p>
-                )}
+                )) : <p className="text-[8px] text-slate-600 text-center py-2 italic">Aucun risque détecté</p>}
               </div>
             </div>
           </div>
         </div>
       </div>
-
       <canvas ref={canvasRef} className="hidden" />
-      <style>{`
-        @keyframes scan { 0% { top: 0% } 100% { top: 100% } }
-        @keyframes slide-in { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-      `}</style>
+      <style>{`@keyframes scan { 0% { top: 0% } 100% { top: 100% } }`}</style>
     </section>
   );
 };

@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { PagePath } from '../App';
+import { Logo } from './Logo';
 
 interface FooterProps {
   onNavigate: (path: PagePath) => void;
@@ -8,53 +9,56 @@ interface FooterProps {
 
 export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   return (
-    <footer className="bg-white pt-20 pb-10 border-t border-stone-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <div className="grid md:grid-cols-3 gap-12 mb-16 items-start">
-          <div className="flex flex-col items-center">
-            <button onClick={() => onNavigate('home')} className="flex items-center gap-2 mb-6 group">
-              <div className="w-12 h-12 bg-[#8B735B] rounded-lg flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
-                <i className="fas fa-shield-alt text-xl"></i>
-              </div>
-              <span className="text-2xl font-bold text-stone-900 tracking-tight">DzSafeDrive</span>
+    <footer className="bg-[#0F172A] pt-10 md:pt-16 pb-6 md:pb-10 text-white border-t border-white/5">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid md:grid-cols-4 gap-6 md:gap-10 mb-8 md:mb-14 items-start text-center md:text-left">
+          <div className="md:col-span-1 flex flex-col items-center md:items-start">
+            <button onClick={() => onNavigate('home')} className="mb-3 md:mb-4 hover:opacity-90 transition-opacity">
+              <Logo className="scale-90 origin-center md:origin-left" />
             </button>
-            <p className="text-stone-500 max-w-xs leading-relaxed text-sm">
-              Leader de la vision artificielle en Algérie. Nous sécurisons les routes algériennes en connectant l'intelligence artificielle à votre trajet quotidien depuis M'Sila.
+            <p className="text-slate-400 leading-tight text-[11px] max-w-xs font-medium italic mb-2 md:mb-3">
+              "Conduisez tranquille, on veille sur vous."
             </p>
-            <div className="mt-6 text-sm text-[#8B735B] font-bold flex items-center gap-2">
-              <i className="fas fa-location-dot"></i>
-              M'Sila, Algérie
+            <p className="text-slate-500 text-[8px] uppercase tracking-widest">
+              Pionnier de la vision artificielle en Algérie.
+            </p>
+          </div>
+          
+          <div className="flex flex-col items-center md:items-start">
+            <h4 className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] mb-3 md:mb-4">Navigation</h4>
+            <ul className="space-y-1.5 md:space-y-2">
+              <li><button onClick={() => onNavigate('home')} className="text-slate-400 hover:text-[#DC2626] transition-colors text-[9px] font-bold uppercase tracking-widest">Accueil</button></li>
+              <li><button onClick={() => onNavigate('demo')} className="text-slate-400 hover:text-[#DC2626] transition-colors text-[9px] font-bold uppercase tracking-widest">Démo Live</button></li>
+              <li><button onClick={() => onNavigate('faq')} className="text-slate-400 hover:text-[#DC2626] transition-colors text-[9px] font-bold uppercase tracking-widest">FAQ</button></li>
+              <li><button onClick={() => onNavigate('pricing')} className="text-slate-400 hover:text-[#DC2626] transition-colors text-[9px] font-bold uppercase tracking-widest">Abonnements</button></li>
+            </ul>
+          </div>
+          
+          <div className="flex flex-col items-center md:items-start">
+            <h4 className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] mb-3 md:mb-4">Informations</h4>
+            <ul className="space-y-1.5 md:space-y-2">
+              <li><button onClick={() => onNavigate('about')} className="text-slate-400 hover:text-[#DC2626] transition-colors text-[9px] font-bold uppercase tracking-widest">À propos</button></li>
+              <li><button onClick={() => onNavigate('contact')} className="text-slate-400 hover:text-[#DC2626] transition-colors text-[9px] font-bold uppercase tracking-widest">Contact</button></li>
+              <li><button onClick={() => onNavigate('privacy')} className="text-slate-400 hover:text-[#DC2626] transition-colors text-[9px] font-bold uppercase tracking-widest">Confidentialité</button></li>
+              <li><button onClick={() => onNavigate('legal')} className="text-slate-400 hover:text-[#DC2626] transition-colors text-[9px] font-bold uppercase tracking-widest">Légal</button></li>
+            </ul>
+          </div>
+
+          <div className="flex flex-col items-center md:items-start">
+            <h4 className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] mb-3 md:mb-4">Social</h4>
+            <div className="flex gap-3">
+              <a href="#" className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-[#DC2626] hover:border-[#DC2626] transition-all"><i className="fab fa-linkedin-in text-xs"></i></a>
+              <a href="#" className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-[#DC2626] hover:border-[#DC2626] transition-all"><i className="fab fa-twitter text-xs"></i></a>
             </div>
-          </div>
-          
-          <div className="flex flex-col items-center">
-            <h4 className="font-bold text-stone-900 mb-6 uppercase text-xs tracking-widest border-b-2 border-amber-100 pb-1 inline-block">Navigation</h4>
-            <ul className="space-y-4">
-              <li><button onClick={() => onNavigate('home')} className="text-stone-500 hover:text-[#8B735B] transition-colors text-sm font-semibold">Accueil</button></li>
-              <li><button onClick={() => onNavigate('features')} className="text-stone-500 hover:text-[#8B735B] transition-colors text-sm font-semibold">IA & Risques</button></li>
-              <li><button onClick={() => onNavigate('about')} className="text-stone-500 hover:text-[#8B735B] transition-colors text-sm font-semibold">À Propos</button></li>
-              <li><button onClick={() => onNavigate('pricing')} className="text-stone-500 hover:text-[#8B735B] transition-colors text-sm font-semibold">Abonnements</button></li>
-              <li><button onClick={() => onNavigate('demo')} className="text-stone-500 hover:text-[#8B735B] transition-colors text-sm font-semibold">Espace Démo</button></li>
-            </ul>
-          </div>
-          
-          <div className="flex flex-col items-center">
-            <h4 className="font-bold text-stone-900 mb-6 uppercase text-xs tracking-widest border-b-2 border-amber-100 pb-1 inline-block">Légal</h4>
-            <ul className="space-y-4">
-              <li><button onClick={() => onNavigate('legal')} className="text-stone-500 hover:text-[#8B735B] transition-colors text-sm font-semibold">Mentions Légales</button></li>
-              <li><button onClick={() => onNavigate('privacy')} className="text-stone-500 hover:text-[#8B735B] transition-colors text-sm font-semibold">Politique RGPD</button></li>
-            </ul>
           </div>
         </div>
         
-        <div className="border-t border-stone-100 pt-10 flex flex-col items-center gap-6">
-          <div className="flex gap-8">
-            <a href="#" className="text-stone-300 hover:text-[#8B735B] text-2xl transition-all hover:scale-125"><i className="fab fa-linkedin"></i></a>
-            <a href="#" className="text-stone-300 hover:text-[#8B735B] text-2xl transition-all hover:scale-125"><i className="fab fa-facebook"></i></a>
-            <a href="#" className="text-stone-300 hover:text-[#8B735B] text-2xl transition-all hover:scale-125"><i className="fab fa-instagram"></i></a>
-            <a href="#" className="text-stone-300 hover:text-[#8B735B] text-2xl transition-all hover:scale-125"><i className="fab fa-twitter"></i></a>
+        <div className="border-t border-white/5 pt-6 md:pt-8 flex flex-col md:flex-row justify-between items-center gap-3 md:gap-4">
+          <p className="text-slate-500 text-[8px] font-black uppercase tracking-widest">© 2024 DzSafeDrive. Sécurité Routière IA.</p>
+          <div className="flex gap-4 md:gap-6">
+            <button onClick={() => onNavigate('legal')} className="text-slate-500 hover:text-white text-[8px] font-black uppercase tracking-widest transition-all">Mentions Légales</button>
+            <button onClick={() => onNavigate('privacy')} className="text-slate-500 hover:text-white text-[8px] font-black uppercase tracking-widest transition-all">Confidentialité</button>
           </div>
-          <p className="text-stone-400 text-sm italic font-medium">© 2024 DzSafeDrive - M'Sila. Tous droits réservés.</p>
         </div>
       </div>
     </footer>

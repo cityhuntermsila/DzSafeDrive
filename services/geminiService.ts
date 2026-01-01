@@ -38,7 +38,7 @@ const parseImageData = (base64Image: string) => {
 export const analyzeImage = async (base64Image: string): Promise<AnalysisResponse> => {
   // Création d'une nouvelle instance à chaque appel pour garantir l'utilisation de la clé la plus récente
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  
+
   const { mimeType, data } = parseImageData(base64Image);
 
   if (!data) {
@@ -84,8 +84,8 @@ export const analyzeImage = async (base64Image: string): Promise<AnalysisRespons
                 properties: {
                   type: { type: Type.STRING, description: "Catégorie: person, animal, obstacle, vehicle" },
                   confidence: { type: Type.NUMBER },
-                  box: { 
-                    type: Type.ARRAY, 
+                  box: {
+                    type: Type.ARRAY,
                     items: { type: Type.NUMBER },
                     description: "[ymin, xmin, ymax, xmax]"
                   },
@@ -103,12 +103,25 @@ export const analyzeImage = async (base64Image: string): Promise<AnalysisRespons
       }
     });
 
-    const responseText = result.text;
+    console.log("Gemini Raw Result:", result);
+
+    // Tentative d'extraction du texte selon les différentes structures possibles de l'API GenAI
+    const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text || (result as any).text;
+
     if (!responseText) {
-      throw new Error("L'API n'a retourné aucun texte.");
+      console.error("Result structure:", JSON.stringify(result, null, 2));
+      throw new Error("L'API n'a retourné aucun texte ou la structure de réponse est inconnue.");
     }
-    
-    return JSON.parse(responseText) as AnalysisResponse;
+
+    try {
+      // Nettoyage éventuel du markdown JSON si présent
+      const jsonMatch = responseText.match(/```json\n([\s\S]*?)\n```/) || responseText.match(/{[\s\S]*}/);
+      const cleanJson = jsonMatch ? jsonMatch[0] : responseText;
+      return JSON.parse(cleanJson) as AnalysisResponse;
+    } catch (parseError) {
+      console.error("JSON Parse Error. Raw text:", responseText);
+      throw new Error("Erreur lors de la lecture des données de détection.");
+    }
   } catch (error: any) {
     console.error("Gemini Analysis Error:", error);
     // On remonte une erreur plus explicite pour l'UI

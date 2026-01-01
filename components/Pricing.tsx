@@ -3,65 +3,123 @@ import React, { useState } from 'react';
 export const Pricing: React.FC = () => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
+  const plans = [
+    {
+      name: "Essentiel",
+      price: "Gratuit",
+      features: [
+        "Détection par image",
+        "10 images / jour",
+        "Mode jour uniquement"
+      ],
+      notIncluded: [
+        "Historique",
+        "Alertes Vocales IA"
+      ],
+      button: "Commencer",
+      popular: false,
+      dark: false
+    },
+    {
+      name: "Advanced Pro",
+      price: billingCycle === 'monthly' ? "2 500 DA" : "1 990 DA",
+      period: "par mois",
+      features: [
+        "Temps Réel Illimité",
+        "Synthèse Vocale IA",
+        "Vigilance 24/7",
+        "Priorité Serveur"
+      ],
+      button: "S'abonner",
+      popular: true,
+      dark: true
+    },
+    {
+      name: "Flotte Pro",
+      price: "Sur mesure",
+      features: [
+        "Multi-véhicules",
+        "Analytiques Avancés",
+        "API Dédiée",
+        "Support 1h"
+      ],
+      button: "Contacter",
+      popular: false,
+      dark: false
+    }
+  ];
+
   return (
-    <section id="pricing" className="py-24 bg-[#0000FF]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <div className="text-[#FFB81C] font-black uppercase tracking-[0.3em] text-[10px] mb-4">Abonnements</div>
-        <h2 className="text-3xl md:text-5xl font-black mb-4 text-white leading-tight">Plans de Protection</h2>
-        <p className="text-blue-100/70 mb-12 max-w-2xl mx-auto text-lg">Choisissez le niveau de vigilance adapté à vos trajets.</p>
-        
-        <div className="flex items-center justify-center gap-6 mb-16">
-          <span className={`text-xs font-black uppercase tracking-widest transition-all ${billingCycle === 'monthly' ? 'text-white' : 'text-white/40'}`}>Mensuel</span>
-          <button 
-            onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
-            className="w-16 h-8 bg-blue-800 rounded-full relative p-1 transition-all hover:bg-blue-700 border border-white/20"
-          >
-            <div className={`w-6 h-6 bg-white rounded-full shadow-md transition-transform duration-500 ${billingCycle === 'yearly' ? 'translate-x-8' : 'translate-x-0'}`}></div>
-          </button>
-          <span className={`text-xs font-black uppercase tracking-widest transition-all ${billingCycle === 'yearly' ? 'text-white' : 'text-white/40'}`}>
-            Annuel <span className="ml-2 px-3 py-1 bg-[#FFB81C] text-blue-900 rounded-full text-[9px] font-black border border-white/20">-30%</span>
-          </span>
+    <section id="pricing" className="py-12 bg-[#F8FAFC]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-10">
+          <div className="text-[#2563EB] font-black uppercase tracking-[0.3em] text-[8px] mb-2">Nos Offres</div>
+          <h2 className="text-2xl md:text-3xl font-extrabold text-[#0F172A] mb-4">La sécurité à votre portée</h2>
+          
+          <div className="flex items-center justify-center gap-1 mt-4 bg-white p-1 rounded-full w-fit mx-auto border border-slate-200 shadow-sm">
+            <button 
+              onClick={() => setBillingCycle('monthly')}
+              className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest transition-all ${billingCycle === 'monthly' ? 'bg-[#0F172A] text-white' : 'text-[#475569] hover:text-slate-600'}`}>
+              Mensuel
+            </button>
+            <button 
+              onClick={() => setBillingCycle('yearly')}
+              className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest transition-all ${billingCycle === 'yearly' ? 'bg-[#0F172A] text-white' : 'text-[#475569] hover:text-slate-600'}`}>
+              Annuel
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          <div className="bg-white/10 p-10 rounded-[2.5rem] shadow-sm border border-white/10 text-center flex flex-col items-center hover:bg-white/20 transition-all border-b-8 border-b-yellow-400/20 backdrop-blur-md">
-            <h3 className="text-lg font-black text-white mb-2 uppercase tracking-widest">Standard</h3>
-            <div className="text-4xl font-black text-yellow-300 mb-8">Gratuit</div>
-            <ul className="space-y-4 mb-10 flex-grow text-sm font-medium">
-              <li className="flex items-center justify-center gap-3 text-white"><i className="fas fa-check text-yellow-400"></i> Détection image</li>
-              <li className="flex items-center justify-center gap-3 text-white"><i className="fas fa-check text-yellow-400"></i> 10 analyses / jour</li>
-              <li className="flex items-center justify-center gap-3 text-white/30"><i className="fas fa-times"></i> Alertes Vocales</li>
-            </ul>
-            <button className="w-full py-4 text-center rounded-2xl border-2 border-white/20 font-black text-xs uppercase tracking-widest hover:bg-white/10 transition-all text-white">Essayer</button>
-          </div>
-          
-          <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl shadow-black/40 text-center flex flex-col items-center relative overflow-hidden border-4 border-[#FFB81C] md:scale-105 z-10 border-b-8 border-b-blue-900">
-            <div className="absolute top-0 right-0 bg-[#FFB81C] text-blue-900 px-6 py-2 text-[8px] font-black uppercase tracking-[0.2em] rounded-bl-2xl">Plus Populaire</div>
-            <h3 className="text-lg font-black text-slate-900 mb-2 uppercase tracking-widest">Advanced Pro</h3>
-            <div className="mb-8">
-              <div className="text-4xl font-black text-blue-800">
-                {billingCycle === 'monthly' ? `2 500 DA` : `1 750 DA`}
+        {/* Flex container pour centrer et permettre 2 par ligne en mobile */}
+        <div className="flex flex-wrap justify-center gap-3 lg:gap-6 max-w-5xl mx-auto">
+          {plans.map((plan, idx) => (
+            <div 
+              key={idx} 
+              className={`flex flex-col justify-between rounded-[1.5rem] lg:rounded-[2rem] p-5 lg:p-8 transition-all duration-300 relative overflow-hidden
+                ${plan.dark ? 'bg-[#0F172A] text-white shadow-2xl scale-105 z-10' : 'bg-white text-[#0F172A] border border-slate-100 shadow-sm'}
+                w-[47%] md:w-[31%] min-w-[150px] max-w-[320px]`}
+            >
+              {plan.popular && (
+                <div className="absolute top-0 right-0 bg-[#DC2626] text-white px-3 py-1 text-[6px] font-black uppercase tracking-widest">Top</div>
+              )}
+              
+              <div className="text-center">
+                <h3 className={`text-[7px] lg:text-[9px] font-black mb-3 uppercase tracking-widest ${plan.dark ? 'text-white/50' : 'text-[#475569]'}`}>
+                  {plan.name}
+                </h3>
+                <div className="mb-4">
+                  <div className="text-sm lg:text-3xl font-black">{plan.price}</div>
+                  {plan.period && (
+                    <div className={`text-[6px] uppercase tracking-widest mt-0.5 ${plan.dark ? 'text-white/30' : 'text-slate-400'}`}>
+                      {plan.period}
+                    </div>
+                  )}
+                </div>
+                
+                <ul className="space-y-2 mb-6 text-left w-full">
+                  {plan.features.map((feature, fIdx) => (
+                    <li key={fIdx} className="flex items-center gap-1.5 text-[7px] lg:text-[11px] font-medium leading-tight">
+                      <i className={`fas fa-check ${plan.dark ? 'text-[#DC2626]' : 'text-[#2563EB]'}`}></i>
+                      <span className={plan.dark ? 'text-white/80' : 'text-[#475569]'}>{feature}</span>
+                    </li>
+                  ))}
+                  {plan.notIncluded?.map((feature, fIdx) => (
+                    <li key={fIdx} className="flex items-center gap-1.5 text-[7px] lg:text-[11px] font-medium opacity-30 line-through italic">
+                      <i className="fas fa-times"></i>
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">/ mois</div>
-            </div>
-            <ul className="space-y-4 mb-10 flex-grow text-sm font-medium">
-              <li className="flex items-center justify-center gap-3 text-slate-800"><i className="fas fa-check text-blue-600"></i> Détection HD</li>
-              <li className="flex items-center justify-center gap-3 text-slate-800"><i className="fas fa-check text-blue-600"></i> Temps Réel Illimité</li>
-              <li className="flex items-center justify-center gap-3 text-slate-800"><i className="fas fa-check text-blue-600"></i> Synthèse Vocale</li>
-            </ul>
-            <button className="w-full py-4 text-center rounded-2xl bg-[#004A99] text-white font-black text-xs uppercase tracking-widest hover:bg-[#003366] transition-all shadow-lg shadow-[#004A99]/20">S'abonner</button>
-          </div>
 
-          <div className="bg-white/10 p-10 rounded-[2.5rem] shadow-sm border border-white/10 text-center flex flex-col items-center hover:bg-white/20 transition-all border-b-8 border-b-blue-400/20 backdrop-blur-md">
-            <h3 className="text-lg font-black text-white mb-2 uppercase tracking-widest">Business</h3>
-            <div className="text-3xl font-black text-blue-200 mb-8">Sur Devis</div>
-            <ul className="space-y-4 mb-10 flex-grow text-sm font-medium">
-              <li className="flex items-center justify-center gap-3 text-white"><i className="fas fa-check text-blue-400"></i> Gestion de Flotte</li>
-              <li className="flex items-center justify-center gap-3 text-white"><i className="fas fa-check text-blue-400"></i> Rapports Avancés</li>
-              <li className="flex items-center justify-center gap-3 text-white"><i className="fas fa-check text-blue-400"></i> Support 24/7</li>
-            </ul>
-            <button className="w-full py-4 text-center rounded-2xl border-2 border-white/20 font-black text-xs uppercase tracking-widest hover:bg-white/10 transition-all text-white">Contact Ventes</button>
-          </div>
+              <button className={`w-full py-2.5 rounded-full font-black text-[7px] lg:text-[9px] uppercase tracking-widest transition-all
+                ${plan.dark 
+                  ? 'bg-[#DC2626] text-white hover:bg-[#B91C1C] shadow-lg shadow-red-600/20' 
+                  : 'border-2 border-slate-100 hover:border-[#0F172A] text-[#0F172A]'}`}>
+                {plan.button}
+              </button>
+            </div>
+          ))}
         </div>
       </div>
     </section>

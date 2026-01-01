@@ -1,5 +1,7 @@
+
 import React, { useState } from 'react';
 import { PagePath } from '../App';
+import { Logo } from './Logo';
 
 interface NavbarProps {
   currentPath: PagePath;
@@ -10,11 +12,11 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, onNavigate }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navLinks: { name: string; path: PagePath }[] = [
-    { name: 'Fonctionnalités', path: 'features' },
-    { name: 'Démo Live', path: 'demo' },
-    { name: 'À Propos', path: 'about' },
     { name: 'Abonnements', path: 'pricing' },
+    { name: 'FAQ', path: 'faq' },
+    { name: 'À Propos', path: 'about' },
     { name: 'Contact', path: 'contact' },
+    { name: 'Confidentialité', path: 'privacy' },
   ];
 
   const handleLinkClick = (path: PagePath) => {
@@ -23,17 +25,12 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, onNavigate }) => {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-slate-100 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-20 items-center">
-          <div className="flex items-center gap-2">
-            <button onClick={() => handleLinkClick('home')} className="flex items-center gap-2 group">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#004A99] to-[#003366] rounded-xl flex items-center justify-center text-white shadow-lg group-hover:rotate-6 transition-all">
-                <i className="fas fa-shield-alt text-xl"></i>
-              </div>
-              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#004A99] via-[#003366] to-[#FFB81C]">
-                DzSafeDrive
-              </span>
+          <div className="flex items-center">
+            <button onClick={() => handleLinkClick('home')} className="hover:opacity-90 transition-opacity">
+              <Logo />
             </button>
           </div>
           
@@ -42,29 +39,26 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, onNavigate }) => {
               <button 
                 key={link.path}
                 onClick={() => handleLinkClick(link.path)} 
-                className={`text-sm font-semibold transition-all relative py-1 ${
-                  currentPath === link.path ? 'text-[#004A99]' : 'text-slate-500 hover:text-[#004A99]'
+                className={`text-[10px] font-bold uppercase tracking-widest transition-all relative py-2 ${
+                  currentPath === link.path ? 'text-[#DC2626]' : 'text-[#475569] hover:text-[#DC2626]'
                 }`}
               >
                 {link.name}
                 {currentPath === link.path && (
-                  <span className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#004A99] to-[#FFB81C] rounded-full"></span>
+                  <span className="absolute bottom-0 left-0 w-full h-[3px] bg-[#DC2626] rounded-full"></span>
                 )}
               </button>
             ))}
             <button 
               onClick={() => handleLinkClick('demo')}
-              className="bg-[#004A99] text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-[#003366] transition-all shadow-md hover:shadow-[#004A99]/20 active:scale-95"
+              className="bg-[#DC2626] text-white px-8 py-3 rounded-full font-black text-[11px] uppercase tracking-widest hover:bg-[#B91C1C] transition-all shadow-lg active:scale-95"
             >
-              Essai Gratuit
+              Essayer
             </button>
           </div>
           
           <div className="md:hidden">
-            <button 
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="text-slate-600 p-2 hover:bg-slate-100 rounded-lg transition-colors"
-            >
+            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-slate-900 p-2">
               <i className={`fas ${isMenuOpen ? 'fa-times' : 'fa-bars'} text-xl`}></i>
             </button>
           </div>
@@ -72,25 +66,23 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, onNavigate }) => {
       </div>
 
       {/* Mobile Menu */}
-      <div className={`md:hidden absolute w-full bg-white border-b border-slate-200 transition-all duration-300 overflow-hidden ${isMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
-        <div className="px-4 pt-2 pb-6 space-y-1">
+      <div className={`md:hidden absolute w-full bg-white border-b border-slate-100 transition-all duration-300 overflow-hidden ${isMenuOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
+        <div className="px-6 py-8 space-y-2 text-center">
           {navLinks.map((link) => (
             <button
               key={link.path}
               onClick={() => handleLinkClick(link.path)}
-              className={`block w-full text-left px-3 py-4 text-base font-bold rounded-xl transition-all ${
-                currentPath === link.path ? 'text-[#004A99] bg-blue-50' : 'text-slate-700 hover:bg-slate-50'
-              }`}
+              className="block w-full py-4 text-[11px] font-bold uppercase tracking-widest text-[#0F172A] border-b border-slate-50 last:border-0"
             >
               {link.name}
             </button>
           ))}
-          <div className="pt-4">
+          <div className="pt-6">
             <button
               onClick={() => handleLinkClick('demo')}
-              className="block w-full bg-gradient-to-r from-[#004A99] to-[#FFB81C] text-white text-center py-4 rounded-xl font-bold shadow-lg"
+              className="w-full bg-[#DC2626] text-white py-5 rounded-2xl font-black text-[11px] uppercase tracking-widest"
             >
-              Commencer l'essai
+              Accès Démo
             </button>
           </div>
         </div>
