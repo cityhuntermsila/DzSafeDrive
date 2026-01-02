@@ -73,23 +73,24 @@ export const Hero: React.FC<{ onNavigate: (path: PagePath) => void }> = ({ onNav
           {/* Photo de la route - Réduite de 30% sur mobile */}
           <div className="lg:w-1/2 w-full relative flex justify-center">
             <div className="absolute -inset-1 bg-gradient-to-r from-red-600/20 to-blue-600/20 rounded-[1.8rem] blur-2xl opacity-20"></div>
-            <div className="relative rounded-[1.8rem] overflow-hidden border border-white/10 shadow-2xl bg-black group aspect-square mx-auto w-[70%] lg:w-full max-w-[360px]">
-              <img
-                src="/images/hero-bg.jpg"
-                alt="Vue route vision IA"
+            <div className="relative rounded-[1.8rem] overflow-hidden border border-white/10 shadow-2xl bg-black group aspect-video mx-auto w-full max-w-[640px]">
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
                 className="w-full h-full object-cover transition-all duration-1000 opacity-80"
-              />
+              >
+                <source src="/videos/hero-video.mp4" type="video/mp4" />
+                {/* Fallback image if video fails to load */}
+                <img
+                  src="/images/hero-bg.jpg"
+                  alt="Vue route vision IA"
+                  className="w-full h-full object-cover"
+                />
+              </video>
               <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A] via-transparent to-red-900/10"></div>
 
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="absolute top-[35%] left-[20%] w-12 h-12 border-l-2 border-t-2 border-[#DC2626] rounded-tl-lg opacity-60"></div>
-                <div className="absolute bottom-[35%] right-[20%] w-10 h-10 border-r-2 border-b-2 border-[#DC2626] rounded-br-lg opacity-60"></div>
-
-                <div className="bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20 flex items-center gap-1 shadow-2xl">
-                  <div className="w-1 h-1 rounded-full bg-[#DC2626] animate-pulse"></div>
-                  <span className="text-[6px] font-black text-white uppercase tracking-[0.15em]">Scan 99%</span>
-                </div>
-              </div>
 
               <div className="absolute bottom-4 right-4 bg-white p-2 lg:p-3 rounded-[0.8rem] lg:rounded-[1rem] shadow-2xl border border-white max-w-[100px] lg:max-w-[140px] text-left animate-float pointer-events-none">
                 <div className="flex items-center gap-1.5 mb-1.5">
