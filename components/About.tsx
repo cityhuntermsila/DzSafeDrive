@@ -23,14 +23,14 @@ const TEAM = [
     color: "navy"
   },
   {
-    name: "Bendaoud Nessrine",
+    name: "Boudaoud Nessrine",
     role: "Frontend Engineer",
     desc: "Transforme des données complexes en interfaces intuitives et réactives.",
     image: "/images/team-frontend.jpg",
     color: "blue"
   },
   {
-    name: "Bensghir Salsabil",
+    name: "Haltali Amina",
     role: "UI/UX Designer",
     desc: "Veille à ce que chaque interaction soit fluide et efficace.",
     image: "/images/team-uiux.jpg",

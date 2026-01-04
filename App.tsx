@@ -21,12 +21,21 @@ const App: React.FC = () => {
     window.scrollTo(0, 0);
   }, [currentPath]);
 
+  const [demoKey, setDemoKey] = useState(0);
+
+  const navigateTo = (path: PagePath) => {
+    if (path === 'demo' && currentPath === 'demo') {
+      setDemoKey(prev => prev + 1);
+    }
+    setCurrentPath(path);
+  };
+
   const renderPage = () => {
     switch (currentPath) {
       case 'home':
         return (
           <div className="animate-fade-in">
-            <Hero onNavigate={setCurrentPath} />
+            <Hero onNavigate={navigateTo} />
             <div className="py-12 bg-[#F8FAFC] border-y border-slate-100">
               <div className="max-w-7xl mx-auto px-4 text-center">
                 <h2 className="text-[9px] font-black mb-8 text-[#94A3B8] uppercase tracking-[0.5em] text-center">Nos Partenaires de Confiance</h2>
@@ -44,7 +53,7 @@ const App: React.FC = () => {
           </div>
         );
       case 'demo':
-        return <div className="animate-fade-in pt-12"><DemoSection onNavigate={setCurrentPath} /></div>;
+        return <div className="animate-fade-in pt-12"><DemoSection key={demoKey} onNavigate={navigateTo} /></div>;
       case 'pricing':
         return (
           <div className="animate-fade-in pt-16">
@@ -68,12 +77,12 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0F172A]">
-      <Navbar currentPath={currentPath} onNavigate={setCurrentPath} />
+      <Navbar currentPath={currentPath} onNavigate={navigateTo} />
       <main>
         {renderPage()}
       </main>
-      <Footer onNavigate={setCurrentPath} />
-      
+      <Footer onNavigate={navigateTo} />
+
       <style>{`
         .animate-fade-in {
           animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
