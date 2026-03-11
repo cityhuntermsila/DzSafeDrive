@@ -36,17 +36,7 @@ const App: React.FC = () => {
         return (
           <div className="animate-fade-in">
             <Hero onNavigate={navigateTo} />
-            <div className="py-12 bg-[#F8FAFC] border-y border-slate-100">
-              <div className="max-w-7xl mx-auto px-4 text-center">
-                <h2 className="text-[9px] font-black mb-8 text-[#94A3B8] uppercase tracking-[0.5em] text-center">Nos Partenaires de Confiance</h2>
-                <div className="flex flex-wrap justify-center items-center gap-8 md:gap-12 opacity-20 grayscale brightness-0">
-                  <i className="fab fa-uber text-2xl md:text-3xl"></i>
-                  <i className="fab fa-ups text-2xl md:text-3xl"></i>
-                  <i className="fab fa-fedex text-2xl md:text-3xl"></i>
-                  <i className="fab fa-dhl text-2xl md:text-3xl"></i>
-                </div>
-              </div>
-            </div>
+
             <TechSection />
             <Features />
             <Contact />

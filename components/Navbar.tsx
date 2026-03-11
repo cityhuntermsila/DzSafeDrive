@@ -51,9 +51,9 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, onNavigate }) => {
             ))}
             <button 
               onClick={() => handleLinkClick('demo')}
-              className="bg-[#DC2626] text-white px-8 py-3 rounded-full font-black text-[11px] uppercase tracking-widest hover:bg-[#B91C1C] transition-all shadow-lg active:scale-95"
+              className="bg-[#DC2626] text-white px-8 py-3 rounded-full font-black text-[11px] uppercase tracking-widest hover:bg-[#B91C1C] transition-all shadow-lg active:scale-95 whitespace-nowrap"
             >
-              Essayer
+              Essayer prototype
             </button>
           </div>
           

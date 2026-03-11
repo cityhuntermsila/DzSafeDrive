@@ -15,28 +15,48 @@ export const Contact: React.FC = () => {
         </div>
 
         <div className="grid lg:grid-cols-2 gap-16 items-start">
-          <div className="space-y-8">
-            <div className="flex items-center gap-6 p-8 bg-[#F8FAFC] rounded-[2rem] border border-slate-100 group hover:border-[#DC2626] transition-all">
-              <div className="w-12 h-12 bg-[#0F172A] text-[#DC2626] rounded-xl flex items-center justify-center text-lg shadow-lg group-hover:scale-110 transition-transform">
-                <i className="fas fa-location-dot"></i>
+          <div className="space-y-6">
+            <div className="flex items-center gap-6 p-6 bg-[#F8FAFC] rounded-[2rem] border border-slate-100 group hover:border-[#DC2626] transition-all">
+              <div className="w-12 h-12 flex-shrink-0 bg-[#0F172A] text-[#DC2626] rounded-xl flex items-center justify-center text-lg shadow-lg group-hover:scale-110 transition-transform">
+                <i className="fas fa-user"></i>
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-[#475569] mb-1">Siège</p>
-                <p className="font-extrabold text-lg text-[#0F172A]">Cité Administrative, M'Sila Centre</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-[#475569] mb-1">Responsable</p>
+                <p className="font-extrabold text-base md:text-lg text-[#0F172A]">Belmokhtar Dounya</p>
               </div>
             </div>
-            
-            <div className="flex items-center gap-6 p-8 bg-[#F8FAFC] rounded-[2rem] border border-slate-100 group hover:border-[#DC2626] transition-all">
-              <div className="w-12 h-12 bg-[#0F172A] text-[#DC2626] rounded-xl flex items-center justify-center text-lg shadow-lg group-hover:scale-110 transition-transform">
+
+            <div className="flex items-center gap-6 p-6 bg-[#F8FAFC] rounded-[2rem] border border-slate-100 group hover:border-[#DC2626] transition-all">
+              <div className="w-12 h-12 flex-shrink-0 bg-[#0F172A] text-[#DC2626] rounded-xl flex items-center justify-center text-lg shadow-lg group-hover:scale-110 transition-transform">
+                <i className="fas fa-phone"></i>
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-[#475569] mb-1">Téléphone</p>
+                <p className="font-extrabold text-base md:text-lg text-[#0F172A] break-all">0657502574</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-6 p-6 bg-[#F8FAFC] rounded-[2rem] border border-slate-100 group hover:border-[#DC2626] transition-all">
+              <div className="w-12 h-12 flex-shrink-0 bg-[#0F172A] text-[#DC2626] rounded-xl flex items-center justify-center text-lg shadow-lg group-hover:scale-110 transition-transform">
                 <i className="fas fa-envelope"></i>
               </div>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-[#475569] mb-1">Email</p>
-                <p className="font-extrabold text-lg text-[#0F172A]">dz-support@safedrive-ai.com</p>
+                <p className="font-extrabold text-base md:text-lg text-[#0F172A] break-all">Dounya.belmokhtar12@gmail.com</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-6 p-6 bg-[#F8FAFC] rounded-[2rem] border border-slate-100 group hover:border-[#DC2626] transition-all">
+              <div className="w-12 h-12 flex-shrink-0 bg-[#0F172A] text-[#DC2626] rounded-xl flex items-center justify-center text-lg shadow-lg group-hover:scale-110 transition-transform">
+                <i className="fas fa-location-dot"></i>
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-[#475569] mb-1">Adresse</p>
+                <p className="font-extrabold text-base md:text-lg text-[#0F172A]">Cité Sonitex, M'sila, Algérie 28000</p>
               </div>
             </div>
 
-            <div className="rounded-[2.5rem] overflow-hidden shadow-2xl border-8 border-[#F8FAFC] h-[300px] relative group">
+            <div className="rounded-[2.5rem] overflow-hidden shadow-2xl border-8 border-[#F8FAFC] h-[250px] relative group">
               <iframe
                 src={mapUrl}
                 width="100%"

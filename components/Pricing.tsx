@@ -1,7 +1,15 @@
 import React, { useState } from 'react';
+import { SubscriptionModal } from './SubscriptionModal';
 
 export const Pricing: React.FC = () => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+
+  const handleOpenModal = (planName: string) => {
+    setSelectedPlan(planName);
+    setIsModalOpen(true);
+  };
 
   const plans = [
     {
@@ -112,7 +120,9 @@ export const Pricing: React.FC = () => {
                 </ul>
               </div>
 
-              <button className={`w-full py-2.5 rounded-full font-black text-[7px] lg:text-[9px] uppercase tracking-widest transition-all
+              <button 
+                onClick={() => handleOpenModal(plan.name)}
+                className={`w-full py-2.5 rounded-full font-black text-[7px] lg:text-[9px] uppercase tracking-widest transition-all
                 ${plan.dark 
                   ? 'bg-[#DC2626] text-white hover:bg-[#B91C1C] shadow-lg shadow-red-600/20' 
                   : 'border-2 border-slate-100 hover:border-[#0F172A] text-[#0F172A]'}`}>
@@ -122,6 +132,12 @@ export const Pricing: React.FC = () => {
           ))}
         </div>
       </div>
+
+      <SubscriptionModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        planName={selectedPlan}
+      />
     </section>
   );
 };
