@@ -30,7 +30,7 @@ export const Pricing: React.FC = () => {
     },
     {
       name: "Advanced Pro",
-      price: billingCycle === 'monthly' ? "2 500 DA" : "1 990 DA",
+      price: billingCycle === 'monthly' ? "500 DA" : "420 DA",
       period: "par mois",
       features: [
         "Temps Réel Illimité",

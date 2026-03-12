@@ -51,8 +51,8 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
         modelRef.current = loadedModel;
         setModelLoading(false);
       } catch (err) {
-        console.error("Failed to load YOLOv8 model:", err);
-        setError("Erreur chargement IA YOLO local.");
+        console.error("Erreur chargement du modèle IA:", err);
+        setError("Erreur chargement du modèle IA. Rechargez la page.");
         setModelLoading(false);
       }
     };
@@ -475,7 +475,7 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
             <span className={`relative flex h-1 w-1 ${modelLoading ? '' : 'animate-ping inline-flex h-full w-full rounded-full bg-[#DC2626] opacity-75'}`}>
               <span className={`relative inline-flex rounded-full h-1 w-1 ${modelLoading ? 'bg-yellow-400' : 'bg-[#DC2626]'}`}></span>
             </span>
-            {modelLoading ? 'Chargement IA (YOLOv8)...' : 'Laboratoire de Vision IA (YOLOv8)'}
+            {modelLoading ? 'Chargement IA...' : 'Laboratoire de Vision IA'}
           </div>
           <h2 className="text-2xl md:text-3xl font-extrabold mb-1 leading-tight">Démonstrateur Interactif</h2>
           <p className="text-slate-400 max-w-2xl mx-auto text-sm">Analysez vos flux en temps réel avec la puissance de l'IA.</p>
@@ -499,7 +499,8 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
                          <div className="w-2 h-2 rounded-full bg-white animate-ping"></div>
                          LIVE (30s)
                        </div>
-                       {/* Camera flip button */}
+                       {/* Camera flip button — mobile only */}
+                       <div className="block md:hidden">
                        <button
                          onClick={switchCamera}
                          title={facingMode === 'environment' ? 'Passer à la caméra avant' : 'Passer à la caméra arrière'}
@@ -510,6 +511,7 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
                            {facingMode === 'environment' ? '🔙 Arrière' : '🙂 Avant'}
                          </span>
                        </button>
+                       </div>
                      </>
                   )}
                   <div className="absolute inset-0 z-10 pointer-events-none">{drawOverlays()}</div>
