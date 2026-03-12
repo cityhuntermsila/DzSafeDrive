@@ -152,15 +152,72 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
   };
 
 
+  /**
+   * Preprocess a video/image frame with contrast, brightness, and sharpening
+   * boosts before passing it to the YOLO model.
+   * This improves detection quality on low-quality or dark footage.
+   */
+  const preprocessWithCanvas = useCallback((source: HTMLVideoElement | HTMLImageElement): HTMLCanvasElement => {
+    const srcW = source instanceof HTMLVideoElement ? source.videoWidth : source.naturalWidth;
+    const srcH = source instanceof HTMLVideoElement ? source.videoHeight : source.naturalHeight;
+    const w = srcW || 640;
+    const h = srcH || 640;
+
+    // Step 1 — Draw with CSS filters (contrast + brightness + saturation)
+    const tmpCanvas = document.createElement('canvas');
+    tmpCanvas.width = w;
+    tmpCanvas.height = h;
+    const tmpCtx = tmpCanvas.getContext('2d')!;
+    tmpCtx.filter = 'contrast(1.35) brightness(1.15) saturate(1.2)';
+    tmpCtx.drawImage(source, 0, 0, w, h);
+
+    // Step 2 — Apply a software sharpen convolution (unsharp-mask style)
+    const outCanvas = document.createElement('canvas');
+    outCanvas.width = w;
+    outCanvas.height = h;
+    const outCtx = outCanvas.getContext('2d')!;
+
+    const imgData = tmpCtx.getImageData(0, 0, w, h);
+    const data = imgData.data;
+    const result = new Uint8ClampedArray(data.length);
+
+    // Sharpen kernel: emphasises centre pixel, subtracts neighbours
+    const kernel = [
+       0, -1,  0,
+      -1,  5, -1,
+       0, -1,  0,
+    ];
+
+    for (let y = 1; y < h - 1; y++) {
+      for (let x = 1; x < w - 1; x++) {
+        const idx = (y * w + x) * 4;
+        for (let c = 0; c < 3; c++) {
+          let val = 0;
+          for (let ky = -1; ky <= 1; ky++) {
+            for (let kx = -1; kx <= 1; kx++) {
+              const ki = (ky + 1) * 3 + (kx + 1);
+              const si = ((y + ky) * w + (x + kx)) * 4 + c;
+              val += data[si] * kernel[ki];
+            }
+          }
+          result[idx + c] = Math.min(255, Math.max(0, val));
+        }
+        result[idx + 3] = data[idx + 3]; // alpha unchanged
+      }
+    }
+    outCtx.putImageData(new ImageData(result, w, h), 0, 0);
+    return outCanvas;
+  }, []);
+
   const performAnalysis = useCallback(async (videoElement: HTMLVideoElement | HTMLImageElement) => {
     if (isAnalysingRef.current || !modelRef.current) return;
     isAnalysingRef.current = true;
 
     try {
-      const elWidth = videoElement instanceof HTMLVideoElement ? videoElement.videoWidth : videoElement.naturalWidth;
-      const elHeight = videoElement instanceof HTMLVideoElement ? videoElement.videoHeight : videoElement.naturalHeight;
-      
-      const tensor = tf.browser.fromPixels(videoElement)
+      // Preprocess for low-quality footage before YOLO inference
+      const processedCanvas = preprocessWithCanvas(videoElement);
+
+      const tensor = tf.browser.fromPixels(processedCanvas)
         .resizeBilinear([640, 640]) // YOLOv8 standard input size
         .div(255.0)                 // Normalize input
         .expandDims(0);             // Add batch dimension
@@ -180,13 +237,14 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
       const maxScores = scores.max(1);
       const classes = scores.argMax(1);
       
-      // Apply Non-Maximum Suppression to remove overlapping boxes
+      // Apply Non-Maximum Suppression — lower score threshold (0.18) to catch
+      // objects that appear blurry or partially obscured in degraded footage
       const nmsIndices = await tf.image.nonMaxSuppressionAsync(
           boxes as tf.Tensor2D,
           maxScores as tf.Tensor1D,
           50, // max boxes
           0.45, // iou threshold
-          0.3 // score threshold
+          0.18  // score threshold (lowered from 0.3 for low-quality video)
       );
       
       const boxesArr = await boxes.array() as number[][];
@@ -254,7 +312,7 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
       const analysis: AnalysisResponse = {
         risks,
         summary: risks.length > 0 ? `${risks.length} objet(s) détecté(s)` : "Voie libre",
-        alertNeeded: maxThreat === ThreatLevel.HIGH && risks.some(r => r.type === HazardType.PERSON || r.type === HazardType.ANIMAL || r.type === HazardType.VEHICLE)
+        alertNeeded: (maxThreat as string) === (ThreatLevel.HIGH as string) && risks.some(r => r.type === HazardType.PERSON || r.type === HazardType.ANIMAL || r.type === HazardType.VEHICLE)
       };
 
       setResult(analysis);
@@ -468,7 +526,22 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
 
               {mode === 'upload' && (
                 <>
-                  <div onClick={() => fileInputRef.current?.click()} className="border border-dashed border-white/10 rounded-lg p-4 text-center cursor-pointer hover:border-[#DC2626] transition-all group">
+                  <div onClick={() => {
+                      // Reset everything immediately when user wants to load a new file
+                      setResult(null);
+                      setImage(null);
+                      setIsVideo(false);
+                      setHistory([]);
+                      setError(null);
+                      isAnalysingRef.current = false;
+                      if (analysisIntervalRef.current) {
+                        window.clearInterval(analysisIntervalRef.current);
+                        analysisIntervalRef.current = null;
+                      }
+                      // Reset the input value so the same file can be re-selected
+                      if (fileInputRef.current) fileInputRef.current.value = '';
+                      fileInputRef.current?.click();
+                    }} className="border border-dashed border-white/10 rounded-lg p-4 text-center cursor-pointer hover:border-[#DC2626] transition-all group">
                     <i className="fas fa-image text-lg text-slate-600 group-hover:text-[#DC2626] mb-1.5"></i>
                     <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{image ? 'Remplacer' : 'Charger Photo/Vidéo'}</p>
                     <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} accept="image/*,video/*" />
