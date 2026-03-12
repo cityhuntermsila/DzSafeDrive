@@ -1,31 +1,9 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { GoogleGenAI, Modality } from "@google/genai";
-import { analyzeImage } from '../services/geminiService';
-import { AnalysisResponse, HazardType, ThreatLevel } from '../types';
+import * as tf from '@tensorflow/tfjs';
+import '@tensorflow/tfjs-backend-webgl';
+import { AnalysisResponse, HazardType, ThreatLevel, DetectionResult } from '../types';
 import { PagePath } from '../App';
-
-function decodeBase64(base64: string) {
-  const binaryString = atob(base64);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes;
-}
-
-async function decodeAudioData(data: Uint8Array, ctx: AudioContext, sampleRate: number, numChannels: number): Promise<AudioBuffer> {
-  const dataInt16 = new Int16Array(data.buffer);
-  const frameCount = dataInt16.length / numChannels;
-  const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
-  for (let channel = 0; channel < numChannels; channel++) {
-    const channelData = buffer.getChannelData(channel);
-    for (let i = 0; i < frameCount; i++) {
-      channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
-    }
-  }
-  return buffer;
-}
 
 interface DemoSectionProps {
   onNavigate?: (path: PagePath) => void;
@@ -35,11 +13,14 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
   const [mode, setMode] = useState<'camera' | 'upload'>('upload');
   const [isLive, setIsLive] = useState(false);
   const [image, setImage] = useState<string | null>(null);
+  const [isVideo, setIsVideo] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalysisResponse | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [history, setHistory] = useState<{ type: string; time: string; level: string }[]>([]);
+  const [modelLoading, setModelLoading] = useState(true);
+  const modelRef = useRef<tf.GraphModel | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -58,38 +39,37 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
     }
   };
 
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    const loadModel = async () => {
+      try {
+        await tf.setBackend('webgl');
+        await tf.ready();
+        const loadedModel = await tf.loadGraphModel('./yolov8n_web_model/model.json');
+        modelRef.current = loadedModel;
+        setModelLoading(false);
+      } catch (err) {
+        console.error("Failed to load YOLOv8 model:", err);
+        setError("Erreur chargement IA YOLO local.");
+        setModelLoading(false);
+      }
+    };
+    loadModel();
+    audioRef.current = new Audio('/alert.mp3');
+  }, []);
+
   const speakSummary = async (text: string) => {
     if (!text || text === lastSpokenSummaryRef.current) return;
     lastSpokenSummaryRef.current = text;
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-preview-tts",
-        contents: [{ parts: [{ text: `Alerte DzSafeDrive : ${text}` }] }],
-        config: {
-          responseModalities: [Modality.AUDIO],
-          speechConfig: {
-            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } },
-          },
-        },
-      });
-
-      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-      if (base64Audio && audioContextRef.current) {
-        const audioBuffer = await decodeAudioData(
-          decodeBase64(base64Audio),
-          audioContextRef.current,
-          24000,
-          1
-        );
-        const source = audioContextRef.current.createBufferSource();
-        source.buffer = audioBuffer;
-        source.connect(audioContextRef.current.destination);
-        source.start();
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        await audioRef.current.play();
       }
     } catch (err) {
-      console.warn("TTS Error:", err);
+      console.warn("Audio Play Error:", err);
     }
   };
 
@@ -119,21 +99,23 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
   }, []);
 
   const stopCamera = useCallback(() => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      setStream(null);
+    if (videoRef.current && videoRef.current.srcObject) {
+      const mediaStream = videoRef.current.srcObject as MediaStream;
+      mediaStream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
     }
+    setStream(null);
     setIsLive(false);
     if (analysisIntervalRef.current) {
       window.clearInterval(analysisIntervalRef.current);
       analysisIntervalRef.current = null;
     }
-    if (videoRef.current) videoRef.current.srcObject = null;
-  }, [stream]);
+  }, []);
 
   const handleModeChange = (newMode: 'camera' | 'upload') => {
     setMode(newMode);
     setImage(null);
+    setIsVideo(false);
     setResult(null);
     setHistory([]);
     setError(null);
@@ -142,16 +124,139 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
       window.clearInterval(analysisIntervalRef.current);
       analysisIntervalRef.current = null;
     }
+    stopCamera();
+
+    if (newMode === 'camera') {
+      startCamera();
+    }
+  };
+
+  const startCamera = async () => {
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      setStream(mediaStream);
+      setIsLive(true);
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+        videoRef.current.play();
+      }
+
+      setTimeout(() => {
+        stopCamera();
+        handleModeChange('upload');
+      }, 30000);
+    } catch (err) {
+      console.error("Camera access error:", err);
+      setError("Impossible d'accéder à la caméra.");
+    }
   };
 
 
-  const performAnalysis = useCallback(async (dataUrl: string) => {
-    if (isAnalysingRef.current) return;
+  const performAnalysis = useCallback(async (videoElement: HTMLVideoElement | HTMLImageElement) => {
+    if (isAnalysingRef.current || !modelRef.current) return;
     isAnalysingRef.current = true;
-    setLoading(true);
 
     try {
-      const analysis = await analyzeImage(dataUrl);
+      const elWidth = videoElement instanceof HTMLVideoElement ? videoElement.videoWidth : videoElement.naturalWidth;
+      const elHeight = videoElement instanceof HTMLVideoElement ? videoElement.videoHeight : videoElement.naturalHeight;
+      
+      const tensor = tf.browser.fromPixels(videoElement)
+        .resizeBilinear([640, 640]) // YOLOv8 standard input size
+        .div(255.0)                 // Normalize input
+        .expandDims(0);             // Add batch dimension
+        
+      const predictions = await modelRef.current.executeAsync(tensor) as tf.Tensor;
+      
+      // YOLOv8 output tensor shape is usually [1, 84, 8400]
+      // 84 components -> 4 bounding box coords (xc, yc, w, h) + 80 class scores
+      // 8400 -> Number of predicted boxes
+      const transRes = predictions.transpose([0, 2, 1]); // Shape [1, 8400, 84]
+      const [boxesTensor, scoresTensor] = tf.split(transRes, [4, 80], 2);
+      
+      const boxes = boxesTensor.squeeze(); // [8400, 4]
+      const scores = scoresTensor.squeeze(); // [8400, 80]
+      
+      // Get the max class probability for each box
+      const maxScores = scores.max(1);
+      const classes = scores.argMax(1);
+      
+      // Apply Non-Maximum Suppression to remove overlapping boxes
+      const nmsIndices = await tf.image.nonMaxSuppressionAsync(
+          boxes as tf.Tensor2D,
+          maxScores as tf.Tensor1D,
+          50, // max boxes
+          0.45, // iou threshold
+          0.3 // score threshold
+      );
+      
+      const boxesArr = await boxes.array() as number[][];
+      const scoresArr = await maxScores.array() as number[];
+      const classesArr = await classes.array() as number[];
+      const indicesArr = await nmsIndices.array() as number[];
+      
+      tensor.dispose();
+      predictions.dispose();
+      transRes.dispose();
+      boxesTensor.dispose();
+      scoresTensor.dispose();
+      maxScores.dispose();
+      classes.dispose();
+      nmsIndices.dispose();
+      
+      const risks: DetectionResult[] = [];
+      let maxThreat: ThreatLevel = ThreatLevel.LOW;
+      
+      indicesArr.forEach(i => {
+        const score = scoresArr[i];
+        const classId = classesArr[i];
+        
+        let riskType = HazardType.OBSTACLE;
+        let className = 'obstacle';
+        
+        // COCO Mapping for relevant objects (0=person, 1=bicycle, 2=car, 3=motorcycle, 5=bus, 7=truck, 15=cat, 16=dog, 17=horse, 18=sheep, 19=cow)
+        if (classId === 0) { riskType = HazardType.PERSON; className = 'person'; }
+        else if (classId >= 15 && classId <= 24) { riskType = HazardType.ANIMAL; className = 'animal'; }
+        else if ([1, 2, 3, 5, 7].includes(classId)) { riskType = HazardType.VEHICLE; className = 'vehicle'; }
+        else return; // Ignore irrelevant detections
+
+        // YOLOv8 box format relative to 640x640 input: [x_center, y_center, width, height]
+        const [xc, yc, w, h] = boxesArr[i];
+        
+        // Convert to percentage (0 - 1000) for UI mapping
+        const ymin = Math.max(0, ((yc - h / 2) / 640) * 1000);
+        const xmin = Math.max(0, ((xc - w / 2) / 640) * 1000);
+        const ymax = Math.min(1000, ((yc + h / 2) / 640) * 1000);
+        const xmax = Math.min(1000, ((xc + w / 2) / 640) * 1000);
+
+        // Calculated size impact vs screen
+        const areaPct = (h / 640) * (w / 640);
+        let threat: ThreatLevel = ThreatLevel.LOW;
+        if (areaPct > 0.15) threat = ThreatLevel.HIGH;
+        else if (areaPct > 0.04) threat = ThreatLevel.MEDIUM;
+
+        // Discard low threat vehicles on edges as per initial logic
+        if (riskType === HazardType.VEHICLE && threat === ThreatLevel.LOW && (xmin < 250 || xmax > 750)) {
+            return; 
+        }
+
+        if (threat === ThreatLevel.HIGH) maxThreat = ThreatLevel.HIGH as ThreatLevel;
+        else if (threat === ThreatLevel.MEDIUM && maxThreat !== ThreatLevel.HIGH) maxThreat = ThreatLevel.MEDIUM as ThreatLevel;
+
+        risks.push({
+          type: riskType,
+          confidence: score,
+          box: [ymin, xmin, ymax, xmax],
+          threatLevel: threat,
+          description: className
+        });
+      });
+
+      const analysis: AnalysisResponse = {
+        risks,
+        summary: risks.length > 0 ? `${risks.length} objet(s) détecté(s)` : "Voie libre",
+        alertNeeded: maxThreat === ThreatLevel.HIGH && risks.some(r => r.type === HazardType.PERSON || r.type === HazardType.ANIMAL || r.type === HazardType.VEHICLE)
+      };
+
       setResult(analysis);
 
       if (analysis.risks.length > 0) {
@@ -160,21 +265,17 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
           level: r.threatLevel,
           time: new Date().toLocaleTimeString('fr-FR', { hour12: false })
         }));
-        setHistory(prev => [...newHistory, ...prev].slice(0, 5));
-
-        const maxThreat = analysis.risks.reduce((max, curr) => {
-          if (curr.threatLevel === ThreatLevel.HIGH) return ThreatLevel.HIGH;
-          if (curr.threatLevel === ThreatLevel.MEDIUM && max !== ThreatLevel.HIGH) return ThreatLevel.MEDIUM;
-          return max;
-        }, ThreatLevel.LOW);
+        if (newHistory.length > 0) {
+            setHistory(prev => [...newHistory, ...prev].slice(0, 5));
+        }
 
         if (maxThreat !== ThreatLevel.LOW) playAlert(maxThreat);
-        if (analysis.alertNeeded) speakSummary(analysis.summary);
+        if (analysis.alertNeeded) speakSummary("Alerte, faites attention");
       }
     } catch (err) {
-      console.error(err);
+      console.error("TFJS Detection Error:", err);
     } finally {
-      setLoading(false);
+      // setLoading(false);
       isAnalysingRef.current = false;
     }
   }, [playAlert]);
@@ -194,22 +295,41 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
       initAudio();
       setResult(null);
       setImage(null);
+      setIsVideo(false);
       setHistory([]);
       setIsLive(false);
       if (analysisIntervalRef.current) {
         window.clearInterval(analysisIntervalRef.current);
         analysisIntervalRef.current = null;
       }
-      if (file.type.startsWith('image/')) {
+      
+      if (file.type.startsWith('video/')) {
+        const objectUrl = URL.createObjectURL(file);
+        setImage(objectUrl);
+        setIsVideo(true);
+      } else if (file.type.startsWith('image/')) {
         const reader = new FileReader();
         reader.onloadend = () => {
           const base64 = reader.result as string;
+          setIsVideo(false);
           setImage(base64);
-          performAnalysis(base64);
+          
+          // Allow React to re-render the <img> element, then wait for its content to load before analyzing
+          setTimeout(() => {
+              const imgEl = document.getElementById('staticImageObj') as HTMLImageElement;
+              if (imgEl) {
+                  // To be completely safe, we only analyze when the image is fully decoded
+                  if (imgEl.complete) {
+                      performAnalysis(imgEl);
+                  } else {
+                      imgEl.onload = () => performAnalysis(imgEl);
+                  }
+              }
+          }, 50);
         };
         reader.readAsDataURL(file);
       } else {
-        setError("Seules les images sont acceptées.");
+        setError("Seuls les images et vidéos sont acceptés.");
       }
     }
   };
@@ -223,22 +343,45 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
         left: `${xmin / 10}%`,
         width: `${(xmax - xmin) / 10}%`,
         height: `${(ymax - ymin) / 10}%`,
-        borderColor: risk.threatLevel === ThreatLevel.HIGH ? '#DC2626' : risk.threatLevel === ThreatLevel.MEDIUM ? '#2563EB' : '#ffffff',
       };
       return (
         <div
           key={index}
-          className={`absolute border-2 rounded pointer-events-none transition-all duration-1000 ease-in-out ${risk.threatLevel === ThreatLevel.HIGH ? 'animate-pulse' : ''}`}
+          className={`absolute pointer-events-none transition-all duration-[300ms] ease-out ${risk.threatLevel === ThreatLevel.HIGH ? 'animate-pulse' : ''}`}
           style={style}
         >
-          <div className={`absolute top-0 left-0 -translate-y-full px-2 py-0.5 text-[8px] font-black text-white uppercase rounded-t flex items-center gap-1 ${risk.threatLevel === ThreatLevel.HIGH ? 'bg-[#DC2626]' : risk.threatLevel === ThreatLevel.MEDIUM ? 'bg-[#2563EB]' : 'bg-slate-600'}`}>
-            <i className={`fas ${risk.type === 'person' ? 'fa-person' : risk.type === 'animal' ? 'fa-paw' : 'fa-triangle-exclamation'}`}></i>
-            {risk.type}
+          <div className={`absolute top-0 left-0 -translate-y-full px-2.5 py-1 text-[9px] font-black text-white uppercase rounded-t-md flex items-center gap-1.5 shadow-lg ${risk.threatLevel === ThreatLevel.HIGH ? 'bg-[#DC2626]' : risk.threatLevel === ThreatLevel.MEDIUM ? 'bg-[#F59E0B]' : 'bg-slate-600'}`}>
+            <i className={`fas ${risk.type === 'person' ? 'fa-person' : risk.type === 'animal' ? 'fa-paw' : risk.type === 'vehicle' ? 'fa-car' : 'fa-triangle-exclamation'}`}></i>
+            <span className="tracking-wider">{risk.type}</span>
+            {risk.threatLevel === ThreatLevel.HIGH && <i className="fas fa-exclamation-circle ml-1 animate-ping"></i>}
           </div>
         </div>
       );
     });
   };
+
+  const captureAndAnalyze = useCallback(() => {
+    if (isAnalysingRef.current || !videoRef.current) return;
+    const video = videoRef.current;
+    if (video.readyState < 2) return;
+    
+    performAnalysis(video);
+  }, [performAnalysis]);
+
+  useEffect(() => {
+    if (isLive || isVideo) {
+      const timer = setTimeout(() => captureAndAnalyze(), 50);
+      const intervalId = window.setInterval(() => {
+        captureAndAnalyze();
+      }, 100); // Détection en quasi temps-réel, le goulot d'étranglement sera la réponse réseau de l'IA (env. 500ms-1s).
+      analysisIntervalRef.current = intervalId;
+      return () => {
+        clearTimeout(timer);
+        window.clearInterval(intervalId);
+        analysisIntervalRef.current = null;
+      };
+    }
+  }, [isLive, isVideo, captureAndAnalyze]);
 
   useEffect(() => {
     return () => {
@@ -254,8 +397,10 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center mb-6">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-white text-[8px] font-black mb-1.5 uppercase tracking-[0.2em]">
-            <span className="relative flex h-1 w-1"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#DC2626] opacity-75"></span><span className="relative inline-flex rounded-full h-1 w-1 bg-[#DC2626]"></span></span>
-            Laboratoire de Vision IA
+            <span className={`relative flex h-1 w-1 ${modelLoading ? '' : 'animate-ping inline-flex h-full w-full rounded-full bg-[#DC2626] opacity-75'}`}>
+              <span className={`relative inline-flex rounded-full h-1 w-1 ${modelLoading ? 'bg-yellow-400' : 'bg-[#DC2626]'}`}></span>
+            </span>
+            {modelLoading ? 'Chargement IA (YOLOv8)...' : 'Laboratoire de Vision IA (YOLOv8)'}
           </div>
           <h2 className="text-2xl md:text-3xl font-extrabold mb-1 leading-tight">Démonstrateur Interactif</h2>
           <p className="text-slate-400 max-w-2xl mx-auto text-sm">Analysez vos flux en temps réel avec la puissance de l'IA.</p>
@@ -266,28 +411,32 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
             {/* Zone d'affichage réduite de 20% (max-w-[80%] sur desktop) */}
             <div className="w-full lg:w-[80%] mx-auto relative aspect-video bg-black rounded-[1.5rem] overflow-hidden shadow-2xl ring-1 ring-white/10 group">
               {mode === 'camera' ? (
-                <div className="absolute inset-0 z-50 bg-[#0F172A]/95 backdrop-blur-xl flex flex-col items-center justify-center p-8 text-center">
-                  <div className="w-12 h-12 bg-[#DC2626] rounded-xl flex items-center justify-center text-white text-xl shadow-2xl mb-4">
-                    <i className="fas fa-lock"></i>
-                  </div>
-                  <h3 className="text-lg font-black mb-2 text-white">Accès Premium Requis</h3>
-                  <p className="text-slate-400 max-w-sm mb-5 leading-relaxed font-medium text-[11px]">
-                    L'analyse en direct via caméra est une fonctionnalité réservée aux abonnés Advanced Pro.
-                  </p>
-                  <button
-                    onClick={() => {
-                      if (onNavigate) onNavigate('pricing');
-                    }}
-                    className="bg-[#DC2626] text-white px-5 py-2.5 rounded-full font-black text-[8px] uppercase tracking-widest hover:bg-[#B91C1C] transition-all"
-                  >
-                    Découvrir les offres
-                  </button>
-                </div>
+                <>
+                  <video ref={videoRef} className="w-full h-full object-cover opacity-80" autoPlay playsInline muted />
+                  {!isLive && (
+                     <div className="absolute inset-0 flex items-center justify-center text-white">
+                        <i className="fas fa-spinner fa-spin text-4xl"></i>
+                     </div>
+                  )}
+                  {isLive && (
+                     <div className="absolute top-4 right-4 bg-red-600/90 text-white text-[10px] font-bold px-3 py-1 rounded-full animate-pulse border border-red-500 z-50 shadow-lg flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-white animate-ping"></div>
+                        LIVE (30s)
+                     </div>
+                  )}
+                  <div className="absolute inset-0 z-10 pointer-events-none">{drawOverlays()}</div>
+                </>
               ) : (
                 <>
                   <div className="absolute inset-0 z-0 flex items-center justify-center">
-                    {image && <img src={image} className="w-full h-full object-cover opacity-80" />}
-                    {!image && <div className="text-white text-center opacity-20"><i className="fas fa-eye-slash text-4xl mb-2"></i><p className="font-black uppercase tracking-widest text-[8px]">Importez une photo</p></div>}
+                    {image && (
+                      isVideo ? (
+                        <video ref={videoRef} src={image} controls autoPlay loop muted crossOrigin="anonymous" className="w-full h-full object-contain bg-black" />
+                      ) : (
+                        <img id="staticImageObj" src={image} className="w-full h-full object-cover opacity-80" />
+                      )
+                    )}
+                    {!image && <div className="text-white text-center opacity-20"><i className="fas fa-eye-slash text-4xl mb-2"></i><p className="font-black uppercase tracking-widest text-[8px]">Importez une photo ou vidéo</p></div>}
                   </div>
                   <div className="absolute inset-0 z-10 pointer-events-none">{drawOverlays()}</div>
                 </>
@@ -295,13 +444,15 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
             </div>
 
             {result && (
-              <div className="w-full lg:w-[80%] mt-4 p-4 bg-white/5 backdrop-blur-md rounded-xl border border-white/10 flex gap-4 items-center animate-fade-in shadow-xl mx-auto">
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center border transition-all flex-shrink-0 ${loading ? 'bg-[#DC2626]/20 text-[#DC2626] border-[#DC2626]/30' : 'bg-[#2563EB]/20 text-[#2563EB] border-[#2563EB]/20'}`}>
-                  <i className={`fas ${loading ? 'fa-circle-notch fa-spin' : 'fa-brain'} text-base`}></i>
+              <div className={`w-full lg:w-[80%] mt-4 p-4 backdrop-blur-md rounded-xl border flex gap-4 items-center animate-fade-in shadow-xl mx-auto transition-colors duration-500 ${result.alertNeeded ? 'bg-red-900/60 border-red-500/80 animate-pulse' : 'bg-white/5 border-white/10'}`}>
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center border transition-all flex-shrink-0 ${loading ? 'bg-[#DC2626]/20 text-[#DC2626] border-[#DC2626]/30' : result.alertNeeded ? 'bg-red-500/20 text-red-400 border-red-500/50' : 'bg-[#2563EB]/20 text-[#2563EB] border-[#2563EB]/20'}`}>
+                  <i className={`fas ${loading ? 'fa-circle-notch fa-spin' : result.alertNeeded ? 'fa-exclamation-triangle' : 'fa-brain'} text-base`}></i>
                 </div>
                 <div>
-                  <p className="text-[7px] font-black text-[#DC2626] mb-0.5 uppercase tracking-widest opacity-90">Assistant Vocal SafeDrive</p>
-                  <p className="text-white leading-relaxed italic text-[11px] font-medium">"{result.summary}"</p>
+                  <p className={`text-[9px] font-black mb-0.5 uppercase tracking-widest opacity-90 ${result.alertNeeded ? 'text-red-400' : 'text-[#DC2626]'}`}>
+                    {result.alertNeeded ? '⚠️ ALERTE DÉTECTION IMMÉDIATE' : 'Assistant Vocal SafeDrive'}
+                  </p>
+                  <p className={`leading-relaxed italic text-[12px] font-bold ${result.alertNeeded ? 'text-white' : 'text-slate-200'}`}>"{result.summary}"</p>
                 </div>
               </div>
             )}
@@ -319,8 +470,8 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
                 <>
                   <div onClick={() => fileInputRef.current?.click()} className="border border-dashed border-white/10 rounded-lg p-4 text-center cursor-pointer hover:border-[#DC2626] transition-all group">
                     <i className="fas fa-image text-lg text-slate-600 group-hover:text-[#DC2626] mb-1.5"></i>
-                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{image ? 'Remplacer' : 'Charger Photo'}</p>
-                    <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} accept="image/*" />
+                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{image ? 'Remplacer' : 'Charger Photo/Vidéo'}</p>
+                    <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} accept="image/*,video/*" />
                   </div>
                 </>
               )}
