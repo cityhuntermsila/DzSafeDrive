@@ -28,6 +28,8 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analysisIntervalRef = useRef<number | null>(null);
+  const sessionTimeoutRef = useRef<number | null>(null);
+  const analysisGenerationRef = useRef(0);
   const isAnalysingRef = useRef(false);
   const lastSpokenSummaryRef = useRef<string>("");
 
@@ -100,6 +102,10 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
   }, []);
 
   const stopCamera = useCallback(() => {
+    if (sessionTimeoutRef.current) {
+      window.clearTimeout(sessionTimeoutRef.current);
+      sessionTimeoutRef.current = null;
+    }
     if (videoRef.current && videoRef.current.srcObject) {
       const mediaStream = videoRef.current.srcObject as MediaStream;
       mediaStream.getTracks().forEach(track => track.stop());
@@ -114,6 +120,19 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
   }, []);
 
   const handleModeChange = (newMode: 'camera' | 'upload') => {
+    // Increment generation to invalidate any pending analysis
+    analysisGenerationRef.current++;
+
+    // Stop and silence audio alerts
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+
+    // Stop any active camera and analysis
+    stopCamera();
+    
+    // Full reset of detection and video parameters
     setMode(newMode);
     setImage(null);
     setIsVideo(false);
@@ -121,11 +140,12 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
     setHistory([]);
     setError(null);
     setIsLive(false);
+    isAnalysingRef.current = false;
+    
     if (analysisIntervalRef.current) {
       window.clearInterval(analysisIntervalRef.current);
       analysisIntervalRef.current = null;
     }
-    stopCamera();
 
     if (newMode === 'camera') {
       startCamera();
@@ -134,10 +154,16 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
 
   const startCamera = async (facing: 'environment' | 'user' = 'environment') => {
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: facing } },
+      setFacingMode(facing); // Update state to match selected camera
+      const constraints: MediaStreamConstraints = {
+        video: { 
+          facingMode: { ideal: facing },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
         audio: false
-      });
+      };
+      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       setStream(mediaStream);
       setIsLive(true);
       if (videoRef.current) {
@@ -145,7 +171,8 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
         videoRef.current.play();
       }
 
-      setTimeout(() => {
+      if (sessionTimeoutRef.current) window.clearTimeout(sessionTimeoutRef.current);
+      sessionTimeoutRef.current = window.setTimeout(() => {
         stopCamera();
         handleModeChange('upload');
       }, 30000);
@@ -185,7 +212,8 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
     tmpCanvas.width = w;
     tmpCanvas.height = h;
     const tmpCtx = tmpCanvas.getContext('2d')!;
-    tmpCtx.filter = 'contrast(1.35) brightness(1.15) saturate(1.2)';
+    // Enhanced filter: More aggressive contrast for night/low-light, subtle blur for noise reduction
+    tmpCtx.filter = 'contrast(1.6) brightness(1.2) saturate(1.3) blur(0.25px)';
     tmpCtx.drawImage(source, 0, 0, w, h);
 
     // Step 2 — Apply a software sharpen convolution (unsharp-mask style)
@@ -228,6 +256,7 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
 
   const performAnalysis = useCallback(async (videoElement: HTMLVideoElement | HTMLImageElement) => {
     if (isAnalysingRef.current || !modelRef.current) return;
+    const generation = analysisGenerationRef.current;
     isAnalysingRef.current = true;
 
     try {
@@ -261,7 +290,7 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
           maxScores as tf.Tensor1D,
           50, // max boxes
           0.45, // iou threshold
-          0.18  // score threshold (lowered from 0.3 for low-quality video)
+          0.12  // Lowered from 0.18 to catch faint objects in low quality video
       );
       
       const boxesArr = await boxes.array() as number[][];
@@ -303,11 +332,11 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
         const ymax = Math.min(1000, ((yc + h / 2) / 640) * 1000);
         const xmax = Math.min(1000, ((xc + w / 2) / 640) * 1000);
 
-        // Calculated size impact vs screen
+        // Calculated size impact vs screen - slightly more sensitive
         const areaPct = (h / 640) * (w / 640);
         let threat: ThreatLevel = ThreatLevel.LOW;
-        if (areaPct > 0.15) threat = ThreatLevel.HIGH;
-        else if (areaPct > 0.04) threat = ThreatLevel.MEDIUM;
+        if (areaPct > 0.12) threat = ThreatLevel.HIGH;
+        else if (areaPct > 0.03) threat = ThreatLevel.MEDIUM;
 
         // Discard low threat vehicles on edges as per initial logic
         if (riskType === HazardType.VEHICLE && threat === ThreatLevel.LOW && (xmin < 250 || xmax > 750)) {
@@ -331,6 +360,9 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
         summary: risks.length > 0 ? `${risks.length} objet(s) détecté(s)` : "Voie libre",
         alertNeeded: (maxThreat as string) === (ThreatLevel.HIGH as string) && risks.some(r => r.type === HazardType.PERSON || r.type === HazardType.ANIMAL || r.type === HazardType.VEHICLE)
       };
+
+      // Final validation check to avoid race conditions
+      if (generation !== analysisGenerationRef.current) return;
 
       setResult(analysis);
 
@@ -410,7 +442,7 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
   };
 
   const drawOverlays = () => {
-    if (!result || mode === 'camera') return null;
+    if (!result) return null;
     return result.risks.map((risk, index) => {
       const [ymin, xmin, ymax, xmax] = risk.box;
       const style: React.CSSProperties = {
@@ -552,8 +584,8 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
             <div className="bg-white/5 backdrop-blur-md p-4 rounded-xl border border-white/10 shadow-xl">
               <h3 className="text-[8px] font-black mb-4 text-slate-500 uppercase tracking-widest">Contrôles</h3>
               <div className="flex gap-2 p-1 bg-black/40 rounded-lg mb-4">
-                <button onClick={() => handleModeChange('upload')} className={`flex-1 py-1.5 rounded text-[8px] font-black transition-all uppercase tracking-widest ${mode === 'upload' ? 'bg-[#DC2626] text-white' : 'text-slate-400 hover:text-white'}`}>IMPORT</button>
-                <button onClick={() => handleModeChange('camera')} className={`flex-1 py-1.5 rounded text-[8px] font-black transition-all uppercase tracking-widest ${mode === 'camera' ? 'bg-[#DC2626] text-white' : 'text-slate-400 hover:text-white'}`}>LIVE</button>
+                <button onClick={() => handleModeChange('upload')} className={`flex-1 py-1.5 rounded text-[8px] font-black transition-all uppercase tracking-widest ${mode === 'upload' ? 'bg-[#DC2626] text-white' : 'bg-white/5 text-slate-400 hover:text-white'}`}>IMPORT</button>
+                <button onClick={() => handleModeChange('camera')} className={`flex-1 py-1.5 rounded text-[8px] font-black transition-all uppercase tracking-widest ${mode === 'camera' ? 'bg-[#DC2626] text-white' : 'bg-white/5 text-slate-400 hover:text-white'}`}>LIVE</button>
               </div>
 
               {mode === 'upload' && (
