@@ -20,6 +20,7 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [history, setHistory] = useState<{ type: string; time: string; level: string }[]>([]);
   const [modelLoading, setModelLoading] = useState(true);
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment'); // environment = rear, user = front
   const modelRef = useRef<tf.GraphModel | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -131,9 +132,12 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
     }
   };
 
-  const startCamera = async () => {
+  const startCamera = async (facing: 'environment' | 'user' = 'environment') => {
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: facing } },
+        audio: false
+      });
       setStream(mediaStream);
       setIsLive(true);
       if (videoRef.current) {
@@ -150,6 +154,19 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
       setError("Impossible d'accéder à la caméra.");
     }
   };
+
+  const switchCamera = useCallback(async () => {
+    const newFacing = facingMode === 'environment' ? 'user' : 'environment';
+    setFacingMode(newFacing);
+    // Stop current stream before restarting with the new camera
+    if (videoRef.current && videoRef.current.srcObject) {
+      const s = videoRef.current.srcObject as MediaStream;
+      s.getTracks().forEach(t => t.stop());
+      videoRef.current.srcObject = null;
+    }
+    setStream(null);
+    await startCamera(newFacing);
+  }, [facingMode]);
 
 
   /**
@@ -477,10 +494,23 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
                      </div>
                   )}
                   {isLive && (
-                     <div className="absolute top-4 right-4 bg-red-600/90 text-white text-[10px] font-bold px-3 py-1 rounded-full animate-pulse border border-red-500 z-50 shadow-lg flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-white animate-ping"></div>
-                        LIVE (30s)
-                     </div>
+                     <>
+                       <div className="absolute top-4 right-4 bg-red-600/90 text-white text-[10px] font-bold px-3 py-1 rounded-full animate-pulse border border-red-500 z-50 shadow-lg flex items-center gap-2">
+                         <div className="w-2 h-2 rounded-full bg-white animate-ping"></div>
+                         LIVE (30s)
+                       </div>
+                       {/* Camera flip button */}
+                       <button
+                         onClick={switchCamera}
+                         title={facingMode === 'environment' ? 'Passer à la caméra avant' : 'Passer à la caméra arrière'}
+                         className="absolute bottom-4 right-4 z-50 flex flex-col items-center gap-1 bg-black/60 hover:bg-black/80 border border-white/20 hover:border-white/50 text-white rounded-xl px-3 py-2 transition-all backdrop-blur-md shadow-lg"
+                       >
+                         <i className="fas fa-camera-rotate text-lg"></i>
+                         <span className="text-[7px] font-black uppercase tracking-widest">
+                           {facingMode === 'environment' ? '🔙 Arrière' : '🙂 Avant'}
+                         </span>
+                       </button>
+                     </>
                   )}
                   <div className="absolute inset-0 z-10 pointer-events-none">{drawOverlays()}</div>
                 </>
