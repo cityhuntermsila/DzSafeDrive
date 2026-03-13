@@ -28,7 +28,6 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analysisIntervalRef = useRef<number | null>(null);
-  const sessionTimeoutRef = useRef<number | null>(null);
   const analysisGenerationRef = useRef(0);
   const isAnalysingRef = useRef(false);
   const lastSpokenSummaryRef = useRef<string>("");
@@ -102,10 +101,6 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
   }, []);
 
   const stopCamera = useCallback(() => {
-    if (sessionTimeoutRef.current) {
-      window.clearTimeout(sessionTimeoutRef.current);
-      sessionTimeoutRef.current = null;
-    }
     if (videoRef.current && videoRef.current.srcObject) {
       const mediaStream = videoRef.current.srcObject as MediaStream;
       mediaStream.getTracks().forEach(track => track.stop());
@@ -170,12 +165,6 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
         videoRef.current.srcObject = mediaStream;
         videoRef.current.play();
       }
-
-      if (sessionTimeoutRef.current) window.clearTimeout(sessionTimeoutRef.current);
-      sessionTimeoutRef.current = window.setTimeout(() => {
-        stopCamera();
-        handleModeChange('upload');
-      }, 30000);
     } catch (err) {
       console.error("Camera access error:", err);
       setError("Impossible d'accéder à la caméra.");
@@ -525,12 +514,12 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onNavigate }) => {
                         <i className="fas fa-spinner fa-spin text-4xl"></i>
                      </div>
                   )}
-                  {isLive && (
-                     <>
-                       <div className="absolute top-4 right-4 bg-red-600/90 text-white text-[10px] font-bold px-3 py-1 rounded-full animate-pulse border border-red-500 z-50 shadow-lg flex items-center gap-2">
-                         <div className="w-2 h-2 rounded-full bg-white animate-ping"></div>
-                         LIVE (30s)
-                       </div>
+                     {isLive && (
+                       <>
+                         <div className="absolute top-4 right-4 bg-red-600/90 text-white text-[10px] font-bold px-3 py-1 rounded-full animate-pulse border border-red-500 z-50 shadow-lg flex items-center gap-2">
+                           <div className="w-2 h-2 rounded-full bg-white animate-ping"></div>
+                           LIVE
+                         </div>
                        {/* Camera flip button — mobile only */}
                        <div className="block md:hidden">
                        <button
