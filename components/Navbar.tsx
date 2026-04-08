@@ -12,6 +12,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, onNavigate }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navLinks: { name: string; path: PagePath }[] = [
+    { name: 'Accueil', path: 'home' },
     { name: 'Abonnements', path: 'pricing' },
     { name: 'FAQ', path: 'faq' },
     { name: 'À Propos', path: 'about' },
@@ -82,7 +83,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, onNavigate }) => {
               onClick={() => handleLinkClick('demo')}
               className="w-full bg-[#DC2626] text-white py-5 rounded-2xl font-black text-[11px] uppercase tracking-widest"
             >
-              Accès Démo
+              essayer prototype
             </button>
           </div>
         </div>

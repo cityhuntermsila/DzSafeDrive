@@ -39,7 +39,7 @@ export const Hero: React.FC<{ onNavigate: (path: PagePath) => void }> = ({ onNav
                 onClick={() => onNavigate('demo')}
                 className="w-[80%] sm:w-auto bg-[#DC2626] text-white px-7 py-3 rounded-full font-black text-[9px] uppercase tracking-widest hover:bg-[#B91C1C] transition-all shadow-xl shadow-red-600/20 active:scale-95"
               >
-                Découvrir la démo
+                essayer prototype
               </button>
               <button
                 onClick={() => onNavigate('privacy')}
